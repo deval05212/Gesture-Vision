@@ -127,29 +127,35 @@ while True:
             mp_draw.draw_landmarks(frame, hand_lm, mp_hands.HAND_CONNECTIONS)
 
             # Pinch to switch filter
-            thumb_tip  = hand_lm.landmark[4]
-            index_tip  = hand_lm.landmark[8]
-            middle_tip = hand_lm.landmark[12]
+            # Pinch to switch filter
+            thumb_tip = hand_lm.landmark[4]
+            index_tip = hand_lm.landmark[8]
 
-            tx, ty = int(thumb_tip.x  * w), int(thumb_tip.y  * h)
-            ix, iy = int(index_tip.x  * w), int(index_tip.y  * h)
-            mx, my = int(middle_tip.x * w), int(middle_tip.y * h)
+            tx, ty = int(thumb_tip.x * w), int(thumb_tip.y * h)
+            ix, iy = int(index_tip.x * w), int(index_tip.y * h)
 
-            now         = time.time()
-            dist_index  = math.hypot(ix - tx, iy - ty)
-            dist_middle = math.hypot(mx - tx, my - ty)
+            now = time.time()
+            dist_index = math.hypot(ix - tx, iy - ty)
 
-            if dist_index < 50 and (now - last_switch_time) > cooldown:
-                current_filter   = (current_filter + 1) % len(filters)
-                last_switch_time = now
-                cv2.putText(frame, "NEXT FILTER", (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            # RIGHT HAND -> NEXT FILTER
+            if label == "Left":   # mirrored camera -> actual right hand
+                if dist_index < 50 and (now - last_switch_time) > cooldown:
+                    current_filter = (current_filter + 1) % len(filters)
+                    last_switch_time = now
 
-            elif dist_middle < 50 and (now - last_switch_time) > cooldown:
-                current_filter   = (current_filter - 1) % len(filters)
-                last_switch_time = now
-                cv2.putText(frame, "PREV FILTER", (50, 50),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
+                    cv2.putText(frame, "NEXT FILTER", (50, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                (0, 255, 0), 2)
+
+            # LEFT HAND -> PREVIOUS FILTER
+            else:   # mirrored camera -> actual left hand
+                if dist_index < 50 and (now - last_switch_time) > cooldown:
+                    current_filter = (current_filter - 1) % len(filters)
+                    last_switch_time = now
+
+                    cv2.putText(frame, "PREV FILTER", (50, 50),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                (0, 165, 255), 2)
 
     # Apply filter ONLY inside the box when both hands detected
     selected = filters[current_filter]
@@ -160,10 +166,9 @@ while True:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
     # HUD
-    cv2.putText(frame, f"Filter (inside box): {selected}",
-                (10, h - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
-    cv2.putText(frame, "Pinch Index=Next  Middle=Prev  Q=Quit",
-                (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (150, 150, 150), 1)
+    cv2.putText(frame, "Right Pinch=Next  Left Pinch=Prev  Q=Quit",
+                (10, h - 40), cv2.FONT_HERSHEY_SIMPLEX,
+                0.45, (150, 150, 150), 1)
 
     cv2.imshow("Hand Filter", frame)
 
